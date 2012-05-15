@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block body %}
+<div data-role="page" id="device_list">
+	<div data-role="header" data-theme="b">
+		<h1>Power Control</h1>
+		<a href="#options" data-icon="gear" class="ui-btn-right">Options</a>
+		<a href="/admin/" rel="external" data-icon="gear" class="ui-btn-left">Admin</a>
+	</div><!-- /header -->
+	
+	<div data-role="content">
+		<ul data-role="listview" data-inset="true" data-theme="c" data-dividertheme="f"> 
+			{% for option in options%}
+				<li>
+					<a href="{{option.href}}" data-transition="slide">
+						{{option.name}}
+					</a>
+				</li>
+			{% endfor %}
+		</ul>
+	</div><!-- /content -->
+	
+	<div data-role="footer" data-theme="b">
+		<h4>Power Control</h4>
+	</div><!-- /footer -->
+</div><!-- /page -->
+{% endblock body %}

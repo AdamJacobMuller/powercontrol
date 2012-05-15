@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block body %}
+<script type="text/javascript">
+function changePort(port) {
+    $.ajax({
+        url     : '/port/'+port.id+'/state/'+port.value,
+        accept  : 'application/json',
+        success : function(data) {
+                port.value=data
+            },
+        error: function(data) {
+            alert('got an error')
+            }
+    });
+}
+</script>
+<div data-role="page" id="device_list">
+	<div data-role="header" data-theme="b">
+		<h1>Power Control</h1>
+		<a href="#options" data-icon="gear" class="ui-btn-right">Options</a>
+		<a href="/admin/" rel="external" data-icon="gear" class="ui-btn-left">Admin</a>
+	</div><!-- /header -->
+	
+	<div data-role="content">
+		<ul data-role="listview" data-inset="true" data-theme="c" data-dividertheme="f" data-filter="true"> 
+			{% for port in ports %}
+				<li>
+					<a href="/port/{{port.tag}}" data-transition="slide">
+						{{port.description}}
+                        <span>
+			<select name="slider" id="{{port.tag}}" class="port" data-role="slider" align="right" onchange="changePort(this);">
+				<option value="on" {% if port.state%}selected{% endif %}>On</option>
+				<option value="off" {% if not port.state%}selected{% endif %}>Off</option>
+			</select></span>
+                    </a>
+				</li>
+			{% endfor %}
+		</ul>
+	</div><!-- /content -->
+	
+	<div data-role="footer" data-theme="b">
+		<h4>Power Control</h4>
+	</div><!-- /footer -->
+</div><!-- /page -->
+{% endblock body %}
