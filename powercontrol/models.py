@@ -24,9 +24,13 @@ class Port(models.Model):
 class Set(models.Model):
     name        = models.CharField(max_length=255)
     tag         = models.CharField(max_length=255)
+    def __unicode__(self):
+        return "Port Set %s" % (self.name)
 
 class SetPort(models.Model):
     port        = models.ForeignKey(Port)
     set         = models.ForeignKey(Set)
+    def __unicode__(self):
+        return "Port %s in set %s" % ( self.port.description, self.set.name )
     class Meta:
         unique_together = (('port','set'))

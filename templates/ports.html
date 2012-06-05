@@ -17,8 +17,8 @@ function changePort(port) {
 <div data-role="page" id="device_list">
 	<div data-role="header" data-theme="b">
 		<h1>Power Control</h1>
-		<a href="#options" data-icon="gear" class="ui-btn-right">Options</a>
-		<a href="/admin/" rel="external" data-icon="gear" class="ui-btn-left">Admin</a>
+		<a href="/" data-icon="back" class="ui-btn-left">Home</a>
+		<a href="/admin/" rel="external" data-icon="gear" class="ui-btn-right">Admin</a>
 	</div><!-- /header -->
 	
 	<div data-role="content">
@@ -26,12 +26,12 @@ function changePort(port) {
 			{% for port in ports %}
 				<li>
 					<a href="/port/{{port.tag}}" data-transition="slide">
-						{{port.description}}
                         <span>
 			<select name="slider" id="{{port.tag}}" class="port" data-role="slider" align="right" onchange="changePort(this);">
 				<option value="on" {% if port.state%}selected{% endif %}>On</option>
 				<option value="off" {% if not port.state%}selected{% endif %}>Off</option>
 			</select></span>
+						{{port.description}}
                     </a>
 				</li>
 			{% endfor %}
