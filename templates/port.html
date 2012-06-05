@@ -1,17 +1,50 @@
 {% extends 'base.html' %}
 {% block body %}
+<script type="text/javascript">
+function changePort(port) {
+    $.ajax({
+        url     : '/port/'+port.id+'/state/'+port.value,
+        accept  : 'application/json',
+        success : function(data) {
+                port.value=data
+            },
+        error: function(data) {
+            alert('got an error')
+            }
+    });
+}
+</script>
 <div data-role="page" id="device_list">
 	<div data-role="header" data-theme="b">
 		<h1>Power Control</h1>
-		<a href="#options" data-icon="gear" class="ui-btn-right">Options</a>
-		<a href="/admin/" rel="external" data-icon="gear" class="ui-btn-left">Admin</a>
+		<a href="/ports" data-icon="back" class="ui-btn-left">Ports</a>
+		<a href="/admin/" rel="external" data-icon="gear" class="ui-btn-right">Admin</a>
 	</div><!-- /header -->
 
-			<label for="flip-a">Flip switch:</label>
-			<select name="slider" id="flip-a" data-role="slider">
-				<option value="off">Off</option>
-				<option value="on">On</option>
-			</select> 
+	<div data-role="content">
+	<form>
+		<ul data-role="listview">
+            <li data-role="list-divider">>
+                {{port}}
+            </li>
+		    <li data-role="fieldcontain">
+                <label for="{{port.tag}}">Power:</label>
+                <select name="slider" id="{{port.tag}}" class="port" data-role="slider" align="right" onchange="changePort(this);">
+				    <option value="on" {% if port.state%}selected{% endif %}>On</option>
+				    <option value="off" {% if not port.state%}selected{% endif %}>Off</option>
+			    </select> 
+            </li>
+			<li data-role="fieldcontain">
+				 <fieldset data-role="controlgroup">
+			    	<legend>Mode:</legend>
+			         	<input type="radio" name="None" id="None" value="None" checked="checked" />
+			         	<label for="None">None</label>
+			    </fieldset>
+			</li>
+		</ul>
+		</form>
+	</div><!-- /content -->
+
 
     <div data-role="footer" data-theme="b">
 		<h4>Power Control</h4>
