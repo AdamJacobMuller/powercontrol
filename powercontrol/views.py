@@ -1,12 +1,14 @@
 from django.template import Context, loader
 from django.shortcuts import render_to_response,get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse,HttpResponseRedirect
 from powercontrol.models import Port,Device
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate
 
 import logging
 import urllib2
 import base64
+import power.settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +33,22 @@ def ports(request):
 def port(request,tag):
     port=get_object_or_404(Port,tag=tag)
     return render_to_response("port.html",{"port":port})
-@login_required
+
 def set_state(request,tag,state):
+    if not request.user.is_authenticated():
+        try:
+            auth=request.META['HTTP_AUTHORIZATION']
+            auth_parts=auth.split(" ")
+            if auth_parts[0]!="Basic":
+                print "bad Authorization header %s" % (auth)
+                return HttpResponseRedirect(power.settings.LOGIN_URL)
+            auth_up=base64.b64decode(auth_parts[1]).split(":",2)
+            auth_result=authenticate(username=auth_up[0], password=auth_up[1])
+            if auth_result is None:
+                return HttpResponseRedirect(power.settings.LOGIN_URL)
+        except KeyError:
+            print "no Authorization header"
+            return HttpResponseRedirect(power.settings.LOGIN_URL)
     port=get_object_or_404(Port,tag=tag)
     if state=="on":
         port.state=True
