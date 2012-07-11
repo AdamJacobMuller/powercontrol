@@ -1,0 +1,3 @@
+*.pyc
+power/settings_local.py
+development.db
