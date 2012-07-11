@@ -12,8 +12,11 @@ urlpatterns = patterns('',
     url(r'^port/(?P<tag>[a-z0-9-]+)/state/(?P<state>on|off)$', 'powercontrol.views.set_state', name='port'),
 
     # Uncomment the admin/doc line below to enable admin documentation:
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    #url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^login$', 'django.contrib.auth.views.login'),
+    url(r'^logout$', 'django.contrib.auth.views.logout'),
+    
 )
