@@ -13,18 +13,11 @@ import power.settings
 logger = logging.getLogger(__name__)
 
 @login_required
-def auth(request):
-    if request.user.is_authenticated():
-        print("is_authenticated == true")
-    else:
-        print("is_authenticated == false")
-
-@login_required
 def home(request):
     options=[
         {'name':"Ports",'href':'/ports'}
     ]
-    return render_to_response("index.html",options)
+    return render_to_response("index.html",{"options":options})
 @login_required
 def ports(request):
     ports=Port.objects.all().exclude(description='').filter(device__enabled=True)
