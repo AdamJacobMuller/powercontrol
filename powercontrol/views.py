@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 @login_required
 def home(request):
     options=[
-        {'name':"Ports",'href':'/ports'}
+        {'name':"Ports",'href':'/ports'},
+        {'name':"Sets",'href':'/sets'}
     ]
     return render_to_response("index.html",{"options":options})
 @login_required
@@ -27,7 +28,7 @@ def port(request,tag):
     port=get_object_or_404(Port,tag=tag)
     return render_to_response("port.html",{"port":port})
 
-def set_state(request,tag,state):
+def set_port_state(request,tag,state):
     if not request.user.is_authenticated():
         try:
             auth=request.META['HTTP_AUTHORIZATION']
@@ -51,7 +52,6 @@ def set_state(request,tag,state):
         rv="off"
     else:
         raise Exception("invalid port state!")
-    port.save()
 
     request=urllib2.Request(url="http://%s/outlet?%s=%s" % (
         port.device.ip,
@@ -63,5 +63,12 @@ def set_state(request,tag,state):
             base64.encodestring("%s:%s" % ( port.device.username,port.device.password))
             ))
     response=urllib2.urlopen(request).read()
+    port.save()
 
     return HttpResponse(rv)
+def sets(request):
+    return HttpResponse('sets not implemented')
+def set(request,tag):
+    return HttpResponse('set not implemented')
+def set_set_state(request,tag,state):
+    return HttpResponse('set set not implemented')

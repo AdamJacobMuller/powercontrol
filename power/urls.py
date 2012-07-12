@@ -7,16 +7,17 @@ admin.autodiscover()
 urlpatterns = patterns('',
     # Examples:
     url(r'^$', 'powercontrol.views.home', name='home'),
+
     url(r'^ports$', 'powercontrol.views.ports', name='ports'),
     url(r'^port/(?P<tag>[a-z0-9-]+)$', 'powercontrol.views.port', name='port'),
-    url(r'^port/(?P<tag>[a-z0-9-]+)/state/(?P<state>on|off)$', 'powercontrol.views.set_state', name='port'),
+    url(r'^port/(?P<tag>[a-z0-9-]+)/state/(?P<state>on|off)$', 'powercontrol.views.set_port_state', name='port'),
 
-    # Uncomment the admin/doc line below to enable admin documentation:
-    #url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
+    url(r'^sets$', 'powercontrol.views.sets', name='sets'),
+    url(r'^set/(?P<tag>[a-z0-9-]+)$', 'powercontrol.views.set', name='set'),
+    url(r'^set/(?P<tag>[a-z0-9-]+)/state/(?P<state>on|off)$', 'powercontrol.views.set_set_state', name='set'),
+    
+    
     url(r'^admin/', include(admin.site.urls)),
     url(r'^login$', 'django.contrib.auth.views.login'),
     url(r'^logout$', 'django.contrib.auth.views.logout'),
-    
 )
