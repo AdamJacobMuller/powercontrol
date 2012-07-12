@@ -7,4 +7,3 @@ class SetAdmin(admin.ModelAdmin):
 admin.site.register(Device)
 admin.site.register(Port)
 admin.site.register(Set,SetAdmin)
-#admin.site.register(SetPort)
