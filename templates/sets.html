@@ -1,19 +1,5 @@
 {% extends 'base.html' %}
 {% block body %}
-<script type="text/javascript">
-function changeset(set) {
-    $.ajax({
-        url     : '/set/'+set.id+'/state/'+set.value,
-        accept  : 'application/json',
-        success : function(data) {
-                set.value=data
-            },
-        error: function(data) {
-            alert('got an error')
-            }
-    });
-}
-</script>
 <div data-role="page" id="device_list">
 	<div data-role="header" data-theme="b">
 		<h1>Power Control</h1>
