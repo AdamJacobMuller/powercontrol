@@ -1,19 +1,6 @@
 {% extends 'base.html' %}
 {% block body %}
-<script type="text/javascript">
-function changePort(port) {
-    $.ajax({
-        url     : '/port/'+port.id+'/state/'+port.value,
-        accept  : 'application/json',
-        success : function(data) {
-                port.value=data
-            },
-        error: function(data) {
-            alert('got an error')
-            }
-    });
-}
-</script>
+
 <div data-role="page" id="device_list">
 	<div data-role="header" data-theme="b">
 		<h1>Power Control</h1>
