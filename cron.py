@@ -100,25 +100,13 @@ if options.christmas:
                 logger.debug("%s already on, skipping" % port)
                 continue
             port.state=True
-            rv="on"
         elif desired_state=="off":
             if port.state == False:
                 logger.debug("%s already off, skipping" % port)
                 continue
             port.state=False
-            rv="off"
         else:
             raise Exception("invalid port state!")
-    
-        request=urllib2.Request(url="http://%s/outlet?%s=%s" % (
-            port.device.ip,
-            port.port,
-            rv.upper()
-            ))
-        request.add_header("Authorization",
-            "Basic %s" % (
-                base64.encodestring("%s:%s" % ( port.device.username,port.device.password))
-                ))
-        response=urllib2.urlopen(request,timeout=2).read()
+        
         port.save()
 

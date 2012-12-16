@@ -3,7 +3,9 @@ from django.shortcuts import render_to_response,get_object_or_404
 from django.http import HttpResponse,HttpResponseRedirect
 from powercontrol.models import Port,Device,Set
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_backends
+
+from functools import wraps
 
 import logging
 import urllib2
@@ -12,6 +14,27 @@ import power.settings
 import json
 
 logger = logging.getLogger(__name__)
+
+def do_http_auth(function):
+    @wraps(function)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            try:
+                auth=request.META['HTTP_AUTHORIZATION']
+                auth_parts=auth.split(" ")
+                if auth_parts[0]!="Basic":
+                    print "bad Authorization header %s" % (auth)
+                    return HttpResponseRedirect(power.settings.LOGIN_URL)
+                auth_up=base64.b64decode(auth_parts[1]).split(":",2)
+                auth_result=authenticate(username=auth_up[0], password=auth_up[1])
+                if auth_result is None:
+                    return HttpResponseRedirect(power.settings.LOGIN_URL)
+            except KeyError:
+                print "no Authorization header"
+                return HttpResponseRedirect(power.settings.LOGIN_URL)
+        print kwargs
+        return function(request,**kwargs)
+    return _wrapped_view
 
 @login_required
 def home(request):
@@ -29,42 +52,18 @@ def ports(request,json=False):
 def port(request,tag,json=False):
     port=get_object_or_404(Port,tag=tag)
     return render_to_response("port.html",{"port":port})
+
+@do_http_auth
 def set_port_state(request,tag,state):
-    if not request.user.is_authenticated():
-        try:
-            auth=request.META['HTTP_AUTHORIZATION']
-            auth_parts=auth.split(" ")
-            if auth_parts[0]!="Basic":
-                print "bad Authorization header %s" % (auth)
-                return HttpResponseRedirect(power.settings.LOGIN_URL)
-            auth_up=base64.b64decode(auth_parts[1]).split(":",2)
-            auth_result=authenticate(username=auth_up[0], password=auth_up[1])
-            if auth_result is None:
-                return HttpResponseRedirect(power.settings.LOGIN_URL)
-        except KeyError:
-            print "no Authorization header"
-            return HttpResponseRedirect(power.settings.LOGIN_URL)
     port=get_object_or_404(Port,tag=tag)
     if state=="on":
         port.state=True
-        rv="on"
     elif state=="off":
         port.state=False
-        rv="off"
     else:
         raise Exception("invalid port state!")
 
-    request=urllib2.Request(url="http://%s/outlet?%s=%s" % (
-        port.device.ip,
-        port.port,
-        rv.upper()
-        ))
-    request.add_header("Authorization",
-        "Basic %s" % (
-            base64.encodestring("%s:%s" % ( port.device.username,port.device.password))
-            ))
-    response=urllib2.urlopen(request).read()
-    port.save()
+    rv=port.save()
 
     return HttpResponse(rv)
 
@@ -93,43 +92,35 @@ def sets(request,json=False):
 def set(request,tag,json=False):
     return HttpResponse('set not implemented')
 
-def set_set_state(request,tag,state):
-    if not request.user.is_authenticated():
-        try:
-            auth=request.META['HTTP_AUTHORIZATION']
-            auth_parts=auth.split(" ")
-            if auth_parts[0]!="Basic":
-                print "bad Authorization header %s" % (auth)
-                return HttpResponseRedirect(power.settings.LOGIN_URL)
-            auth_up=base64.b64decode(auth_parts[1]).split(":",2)
-            auth_result=authenticate(username=auth_up[0], password=auth_up[1])
-            if auth_result is None:
-                return HttpResponseRedirect(power.settings.LOGIN_URL)
-        except KeyError:
-            print "no Authorization header"
-            return HttpResponseRedirect(power.settings.LOGIN_URL)
+@do_http_auth
+def set_port_mode(request,tag,mode):
+    port=get_object_or_404(Port,tag=tag)
+    port.mode = mode
+    rv=port.save()
+    return HttpResponse(rv)
 
+@do_http_auth
+def set_set_mode(request,tag,mode):
     set=get_object_or_404(Set,tag=tag)
+    rv=[]
+    for port in set.ports.all():
+        port.mode = mode
+        rv.append(port.save())
+
+    return HttpResponse(','.join(rv))
+
+@do_http_auth
+def set_set_state(request,tag,state):
+    set=get_object_or_404(Set,tag=tag)
+    rv=[]
     for port in set.ports.all():
         if state=="on":
             port.state=True
-            rv="on"
         elif state=="off":
             port.state=False
-            rv="off"
         else:
             raise Exception("invalid port state!")
+        
+        rv.append(port.save())
 
-        request=urllib2.Request(url="http://%s/outlet?%s=%s" % (
-            port.device.ip,
-            port.port,
-            rv.upper()
-            ))
-        request.add_header("Authorization",
-            "Basic %s" % (
-                base64.encodestring("%s:%s" % ( port.device.username,port.device.password))
-                ))
-        response=urllib2.urlopen(request).read()
-        port.save()
-
-    return HttpResponse(rv)
+    return HttpResponse(','.join(rv))
