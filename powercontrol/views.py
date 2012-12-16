@@ -32,7 +32,6 @@ def do_http_auth(function):
             except KeyError:
                 print "no Authorization header"
                 return HttpResponseRedirect(power.settings.LOGIN_URL)
-        print kwargs
         return function(request,**kwargs)
     return _wrapped_view
 
