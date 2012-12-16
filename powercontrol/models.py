@@ -47,6 +47,8 @@ class Port(models.Model):
         return "%s - %s" % (dn,pn)
 
     def save(self, *args, **kwargs):
+        if self.mode == "none":
+            self.mode = None
         if self.mode is None:
             if self.state == True:
                 rv="on"
@@ -58,7 +60,7 @@ class Port(models.Model):
             elif self.mode == "off":
                 rv="off"
             else:
-                raise Exception("invalid RV value")
+                raise Exception("invalid mode: %s" % self.mode)
         url = "http://%s/outlet?%s=%s" % (
             self.device.ip,
             self.port,
