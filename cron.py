@@ -17,25 +17,25 @@ from django.shortcuts import get_object_or_404
 from optparse import OptionParser
 
 logging.basicConfig(
-	format='%(asctime)s [%(levelname)s] %(message)s',
-	#filename='/tmp/ptm.log'
-	)
-logger=logging.getLogger("cron")
+    format = '%(asctime)s [%(levelname)s] %(message)s',
+)
+logger = logging.getLogger("cron")
 
 parser = OptionParser()
-parser.add_option("-l","--log-level",dest="log_level",default="INFO")
-parser.add_option("-r","--reconcile",dest="reconcile",default=False,action='store_true')
-parser.add_option("-c","--christmas",dest="christmas",default=False,action='store_true')
+parser.add_option("-l", "--log-level", dest = "log_level", default = "INFO")
+parser.add_option("-r", "--reconcile", dest = "reconcile", default = False, action = 'store_true')
+parser.add_option("-c", "--christmas", dest = "christmas", default = False, action = 'store_true')
 
 (options, args) = parser.parse_args()
 
-logger.setLevel(getattr(logging,options.log_level))
+logger.setLevel(getattr(logging, options.log_level))
+
 
 def clean(string):
-    return re.sub("[^a-zA-Z0-9]+","-",string).strip("-").lower()
+    return re.sub("[^a-zA-Z0-9]+", "-", string).strip("-").lower()
 
 if options.reconcile:
-    devices=Device.objects.all()
+    devices = Device.objects.filter(enabled = True).all()
     for device in devices:
         try:
             url="http://%s/index.htm" % (device.ip)
@@ -46,7 +46,7 @@ if options.reconcile:
                 ))
             logger.debug("loading %s" % url)
             response=urllib2.urlopen(request,timeout=2).read()
-            rer=re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>',response)
+            rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>',response)
             for match in rer:
                 ports=Port.objects.filter(
                     device=device,
