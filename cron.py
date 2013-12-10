@@ -9,6 +9,7 @@ import pytz
 import astral
 import socket
 import logging
+import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "power.settings")
 
@@ -25,6 +26,7 @@ parser = OptionParser()
 parser.add_option("-l", "--log-level", dest = "log_level", default = "INFO")
 parser.add_option("-r", "--reconcile", dest = "reconcile", default = False, action = 'store_true')
 parser.add_option("-c", "--christmas", dest = "christmas", default = False, action = 'store_true')
+parser.add_option("-f", "--forecast", dest = "forecast", default = False)
 parser.add_option("-t", "--time", dest = "time", default = False)
 
 (options, args) = parser.parse_args()
@@ -109,7 +111,36 @@ if options.christmas:
         logger.info("not after sunset")
         desired_state = "off"
 
-    sys.exit(1)
+    if options.forecast and desired_state == "off":
+        f_opts = options.forecast.split(",")
+        api_key = f_opts[0]
+        lat = float(f_opts[1])
+        lon = float(f_opts[2])
+        try:
+            cloudCover = float(f_opts[3])
+        except IndexError:
+            cloudCover = .75
+        try:
+            visibility = float(f_opts[4])
+        except IndexError:
+            visibility = 1
+
+        f_url = 'https://api.forecast.io/forecast/%s/%f,%f' % ( api_key, lat, lon)
+
+        logger.debug("loading forecast from %s" % f_url)
+        forecast = requests.get(f_url)
+
+        if forecast.json['currently']['cloudCover'] > cloudCover:
+            logger.debug("cloudCover of %f is > %f" % ( forecast.json['currently']['cloudCover'], cloudCover))
+            desired_state = "on"
+        else:
+            logger.debug("cloudCover of %f is <= %f" % ( forecast.json['currently']['cloudCover'], cloudCover))
+
+        if forecast.json['currently']['visibility'] < visibility:
+            logger.debug("visibility of %f is < %f" % ( forecast.json['currently']['visibility'], visibility))
+            desired_state = "on"
+        else:
+            logger.debug("visibility of %f is >= %f" % ( forecast.json['currently']['visibility'], visibility))
 
     set = get_object_or_404(Set, tag = 'christmas-lights')
     for port in set.ports.all():
