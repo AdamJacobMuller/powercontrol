@@ -119,6 +119,9 @@ if options.reconcile:
                         port.save()
                     except:
                         logger.error(sys.exc_info()[0])
+            except Exception as something:
+                logger.exception(something)
+
 
 if options.christmas:
     sun_times = astral.Astral()['New York'].sun(datetime.date.today())
