@@ -1,14 +1,15 @@
 from django.db import models
 
 import urllib2
+import requests
 import base64
 
 
 class Device(models.Model):
     name = models.CharField(max_length=255)
-    ip = models.GenericIPAddressField(unique=True)
-    username = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
+    ip = models.CharField(max_length=255, unique=True)
+    username = models.CharField(max_length=255, blank=True)
+    password = models.CharField(max_length=255, blank=True)
     enabled = models.BooleanField()
     type = models.CharField(max_length=255)
 
@@ -55,14 +56,14 @@ class Port(models.Model):
                 v_state = 1
             elif self.state is False:
                 d_state = 'off'
-                v_state = 1
+                v_state = 0
         else:
             if self.mode == "on":
                 d_state = "on"
                 v_state = 1
             elif self.mode == "off":
                 d_state = 'off'
-                v_state = 1
+                v_state = 0
             else:
                 raise Exception("invalid mode: %s" % self.mode)
         if self.device.type == "dli":
@@ -79,17 +80,18 @@ class Port(models.Model):
                                )
 
             response = urllib2.urlopen(request).read()
-        if self.device.type == "vera":
+        elif self.device.type == "vera":
             url = 'http://%s/data_request?id=action&output_format=json&DeviceNum=%d&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue=%d' % (
                 self.device.ip,
                 self.port,
                 v_state
             )
             requests.get(url)
-            log.debug(requests.json())
+        else:
+            raise Exception("INVALID DEVICE TYPE!")
 
         super(Port, self).save(*args, **kwargs)
-        return rv
+        return d_state
 
 
 class Set(models.Model):

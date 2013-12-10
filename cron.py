@@ -78,18 +78,19 @@ if options.reconcile:
                         port.state = None
                     try:
                         port.save()
-                    except:
-                        logger.error(sys.exc_info()[0])
+                    except Exception as e:
+                        logger.exception(e)
                     logger.debug(port)
             except urllib2.HTTPError as foo:
-                logger.error("failed: %s" % ( foo))
+                logger.exception(foo)
             except socket.timeout as foo:
-                logger.error("failed: %s" % ( foo))
+                logger.exception(foo)
         elif device.type == "vera":
             try:
-                sdata = requests.get("http://%s/data_request?id=sdata&output_format=json" % device.ip)
+                s_url = "http://%s/data_request?id=sdata&output_format=json" % device.ip
+                logger.debug("loading %s" % s_url)
+                sdata = requests.get(s_url)
                 s_json = sdata.json()
-                print json.dumps(s_json, indent = 4)
                 for vera_device in s_json['devices']:
                     ports = Port.objects.filter(
                         device = device,
@@ -117,10 +118,11 @@ if options.reconcile:
                         port.tag = None
                     try:
                         port.save()
-                    except:
-                        logger.error(sys.exc_info()[0])
-            except Exception as something:
-                logger.exception(something)
+                    except Exception as e:
+                        logger.exception(e)
+                    logger.debug(port)
+            except Exception as e:
+                logger.exception(e)
 
 
 if options.christmas:
