@@ -25,6 +25,7 @@ parser = OptionParser()
 parser.add_option("-l", "--log-level", dest = "log_level", default = "INFO")
 parser.add_option("-r", "--reconcile", dest = "reconcile", default = False, action = 'store_true')
 parser.add_option("-c", "--christmas", dest = "christmas", default = False, action = 'store_true')
+parser.add_option("-t", "--time", dest = "time", default = False)
 
 (options, args) = parser.parse_args()
 
@@ -38,76 +39,91 @@ if options.reconcile:
     devices = Device.objects.filter(enabled = True).all()
     for device in devices:
         try:
-            url="http://%s/index.htm" % (device.ip)
-            request=urllib2.Request(url="http://%s/index.htm" % (device.ip))
+            url = "http://%s/index.htm" % (device.ip)
+            request = urllib2.Request(url="http://%s/index.htm" % (device.ip))
             request.add_header("Authorization",
-                "Basic %s" % (
-                    base64.encodestring("%s:%s" % ( device.username,device.password))
-                ))
+                               "Basic %s" % (
+                               base64.encodestring("%s:%s" % ( device.username, device.password))
+                               )
+                               )
             logger.debug("loading %s" % url)
-            response=urllib2.urlopen(request,timeout=2).read()
-            rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>',response)
+            response = urllib2.urlopen(request, timeout = 2).read()
+            rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>', response)
             for match in rer:
-                ports=Port.objects.filter(
+                ports = Port.objects.filter(
                     device=device,
                     port=match.group("port")
-                    )
-                if len(ports)==0:
-                    port=Port()
-                    port.port=match.group("port")
-                    port.device=device
+                )
+                if len(ports) == 0:
+                    port = Port()
+                    port.port = match.group("port")
+                    port.device = device
                 else:
-                    port=ports[0]
-    
-                port.description=match.group("description")
-    
-                port.tag=clean(port.description)
-                if len(port.tag)==0:
-                    port.tag=None
-    
-                if match.group("state")=="ON":
-                    port.state=True
-                elif match.group("state")=="OFF":
-                    port.state=False
+                    port = ports[0]
+
+                port.description = match.group("description")
+
+                port.tag = clean(port.description)
+                if len(port.tag) == 0:
+                    port.tag = None
+
+                if match.group("state") == "ON":
+                    port.state = True
+                elif match.group("state") == "OFF":
+                    port.state = False
                 else:
-                    port.state=None
+                    port.state = None
                 try:
                     port.save()
                 except:
                     logger.error(sys.exc_info()[0])
                 logger.debug(port)
         except urllib2.HTTPError as foo:
-            logger.error("failed: %s" % ( foo ))
+            logger.error("failed: %s" % ( foo))
         except socket.timeout as foo:
-            logger.error("failed: %s" % ( foo ))
+            logger.error("failed: %s" % ( foo))
 
 if options.christmas:
-    sun_times=astral.Astral()['New York'].sun(datetime.date.today())
+    sun_times = astral.Astral()['New York'].sun(datetime.date.today())
     est = pytz.timezone("America/New_York")
-    now=datetime.datetime.now(tz=est)
-    sunset=sun_times['sunset']
-    
+    if options.time:
+        now = datetime.datetime.fromtimestamp(float(options.time), tz = est)
+    else:
+        now = datetime.datetime.now(tz = est)
+    sunset = sun_times['sunset']
+    sunrise = sun_times['sunrise']
+    i_delta = (now - sunrise).total_seconds()
+
+    logger.debug("now is %s (%s)" % (now, repr(now)))
+    logger.debug("sunrise is %s (%s)" % (sunset, repr(sunrise)))
+    logger.debug("sunset is %s (%s)" % (sunset, repr(sunset)))
+    logger.debug("now-rise delta is %s (%s) %s" % (now - sunrise, repr(now - sunrise), i_delta))
+
     if now > sunset:
         logger.info("currently after sunset")
-        desired_state="on"
+        desired_state = "on"
+    elif i_delta > -3600 and i_delta < 1800:
+        logger.info("currently around sunrise")
+        desired_state = "on"
     else:
         logger.info("not after sunset")
-        desired_state="off"
-    
-    set=get_object_or_404(Set,tag='christmas-lights')
+        desired_state = "off"
+
+    sys.exit(1)
+
+    set = get_object_or_404(Set, tag = 'christmas-lights')
     for port in set.ports.all():
-        if desired_state=="on":
-            if port.state == True:
+        if desired_state == "on":
+            if port.state is True:
                 logger.debug("%s already on, skipping" % port)
                 continue
-            port.state=True
-        elif desired_state=="off":
-            if port.state == False:
+            port.state = True
+        elif desired_state == "off":
+            if port.state is False:
                 logger.debug("%s already off, skipping" % port)
                 continue
-            port.state=False
+            port.state = False
         else:
             raise Exception("invalid port state!")
-        
-        port.save()
 
+        port.save()
