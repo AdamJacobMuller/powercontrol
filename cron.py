@@ -40,50 +40,85 @@ def clean(string):
 if options.reconcile:
     devices = Device.objects.filter(enabled = True).all()
     for device in devices:
-        try:
-            url = "http://%s/index.htm" % (device.ip)
-            request = urllib2.Request(url="http://%s/index.htm" % (device.ip))
-            request.add_header("Authorization",
-                               "Basic %s" % (
-                               base64.encodestring("%s:%s" % ( device.username, device.password))
-                               )
-                               )
-            logger.debug("loading %s" % url)
-            response = urllib2.urlopen(request, timeout = 2).read()
-            rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>', response)
-            for match in rer:
-                ports = Port.objects.filter(
-                    device=device,
-                    port=match.group("port")
-                )
-                if len(ports) == 0:
-                    port = Port()
-                    port.port = match.group("port")
-                    port.device = device
-                else:
-                    port = ports[0]
+        if device.type == "dli":
+            try:
+                url = "http://%s/index.htm" % (device.ip)
+                request = urllib2.Request(url="http://%s/index.htm" % (device.ip))
+                request.add_header("Authorization",
+                                   "Basic %s" % (
+                                   base64.encodestring("%s:%s" % ( device.username, device.password))
+                                   )
+                                   )
+                logger.debug("loading %s" % url)
+                response = urllib2.urlopen(request, timeout = 2).read()
+                rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>', response)
+                for match in rer:
+                    ports = Port.objects.filter(
+                        device = device,
+                        port = match.group("port")
+                    )
+                    if len(ports) == 0:
+                        port = Port()
+                        port.port = match.group("port")
+                        port.device = device
+                    else:
+                        port = ports[0]
 
-                port.description = match.group("description")
+                    port.description = match.group("description")
 
-                port.tag = clean(port.description)
-                if len(port.tag) == 0:
-                    port.tag = None
+                    port.tag = clean(port.description)
+                    if len(port.tag) == 0:
+                        port.tag = None
 
-                if match.group("state") == "ON":
-                    port.state = True
-                elif match.group("state") == "OFF":
-                    port.state = False
-                else:
-                    port.state = None
-                try:
-                    port.save()
-                except:
-                    logger.error(sys.exc_info()[0])
-                logger.debug(port)
-        except urllib2.HTTPError as foo:
-            logger.error("failed: %s" % ( foo))
-        except socket.timeout as foo:
-            logger.error("failed: %s" % ( foo))
+                    if match.group("state") == "ON":
+                        port.state = True
+                    elif match.group("state") == "OFF":
+                        port.state = False
+                    else:
+                        port.state = None
+                    try:
+                        port.save()
+                    except:
+                        logger.error(sys.exc_info()[0])
+                    logger.debug(port)
+            except urllib2.HTTPError as foo:
+                logger.error("failed: %s" % ( foo))
+            except socket.timeout as foo:
+                logger.error("failed: %s" % ( foo))
+        elif device.type == "vera":
+            try:
+                sdata = requests.get("http://%s/data_request?id=sdata&output_format=json" % device.ip)
+                s_json = sdata.json()
+                print json.dumps(s_json, indent = 4)
+                for vera_device in s_json['devices']:
+                    ports = Port.objects.filter(
+                        device = device,
+                        port = vera_device['id']
+                    )
+                    if len(ports) == 0:
+                        port = Port()
+                        port.port = vera_device['id']
+                        port.device = device
+                    else:
+                        port = ports[0]
+
+                    port.description = vera_device['name']
+
+                    port.tag = clean(port.description)
+
+                    if vera_device['status'] == "1":
+                        port.state = True
+                    elif vera_device['status'] == "0":
+                        port.state = False
+                    else:
+                        raise Exception("unknown vera device status: %s" % (repr(vera_device['status'])))
+
+                    if len(port.tag) == 0:
+                        port.tag = None
+                    try:
+                        port.save()
+                    except:
+                        logger.error(sys.exc_info()[0])
 
 if options.christmas:
     sun_times = astral.Astral()['New York'].sun(datetime.date.today())
@@ -129,18 +164,19 @@ if options.christmas:
 
         logger.debug("loading forecast from %s" % f_url)
         forecast = requests.get(f_url)
+        forecast_j = forecast.json()
 
-        if forecast.json['currently']['cloudCover'] > cloudCover:
-            logger.debug("cloudCover of %f is > %f" % ( forecast.json['currently']['cloudCover'], cloudCover))
+        if forecast_j['currently']['cloudCover'] > cloudCover:
+            logger.info("cloudCover of %f is > %f" % ( forecast_j['currently']['cloudCover'], cloudCover))
             desired_state = "on"
         else:
-            logger.debug("cloudCover of %f is <= %f" % ( forecast.json['currently']['cloudCover'], cloudCover))
+            logger.debug("cloudCover of %f is <= %f" % ( forecast_j['currently']['cloudCover'], cloudCover))
 
-        if forecast.json['currently']['visibility'] < visibility:
-            logger.debug("visibility of %f is < %f" % ( forecast.json['currently']['visibility'], visibility))
+        if forecast_j['currently']['visibility'] < visibility:
+            logger.info("visibility of %f is < %f" % ( forecast_j['currently']['visibility'], visibility))
             desired_state = "on"
         else:
-            logger.debug("visibility of %f is >= %f" % ( forecast.json['currently']['visibility'], visibility))
+            logger.debug("visibility of %f is >= %f" % ( forecast_j['currently']['visibility'], visibility))
 
     set = get_object_or_404(Set, tag = 'christmas-lights')
     for port in set.ports.all():
