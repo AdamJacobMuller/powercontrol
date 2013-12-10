@@ -111,7 +111,7 @@ if options.christmas:
         logger.info("not after sunset")
         desired_state = "off"
 
-    if options.forecast and desired_state == "off":
+    if options.forecast and desired_state == "off" and i_delta > 0:
         f_opts = options.forecast.split(",")
         api_key = f_opts[0]
         lat = float(f_opts[1])
