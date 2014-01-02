@@ -27,12 +27,18 @@ class Port(models.Model):
             ('On'   , 'on'),
             ('Off'  , 'off')
     )
+    authorities = (
+                  ('Local', 'local'),
+                  ('Remote', 'remote'),
+
+    )
     device = models.ForeignKey(Device)
     port = models.IntegerField()
     description = models.CharField(max_length=255)
     tag = models.CharField(unique=True, max_length=255, null=True)
     state = models.BooleanField()
-    mode = models.CharField(max_length=255, choices=modes, null=True)
+    mode = models.CharField(max_length=255, choices=modes, null=True, blank=True)
+    authority = models.CharField(max_length = 255, choices = authorities, null = False, default = 'local')
 
     def __unicode__(self):
         if len(self.device.name) > 0:
@@ -49,6 +55,8 @@ class Port(models.Model):
 
     def save(self, *args, **kwargs):
         if self.mode == "none":
+            self.mode = None
+        if self.mode == "None":
             self.mode = None
         if self.mode is None:
             if self.state is True:
