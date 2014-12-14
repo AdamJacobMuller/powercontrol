@@ -34,8 +34,18 @@ parser.add_option("-t", "--time", dest = "time", default = False)
 logger.setLevel(getattr(logging, options.log_level))
 
 
-def clean(string):
-    return re.sub("[^a-zA-Z0-9]+", "-", string).strip("-").lower()
+def clean(string, id = None, port = None):
+    tag = re.sub("[^a-zA-Z0-9]+", "-", string).strip("-").lower()
+    if port is not None:
+        ports = Port.objects.filter(
+            tag = tag
+        )
+        logger.debug("clean: ports is %s" % ports)
+        if id is None or ports[0].id != id:
+            return '%s-%s' % (tag, port)
+    else:
+        logger.debug("clean: no lookup for %s - %s - %s" % (string, id, port))
+    return tag
 
 if options.reconcile:
     devices = Device.objects.filter(enabled = True).all()
@@ -107,7 +117,7 @@ if options.reconcile:
 
                     port.description = vera_device['name']
 
-                    port.tag = clean(port.description)
+                    port.tag = clean(port.description, port.id, port.port)
 
                     if 'status' not in vera_device:
                         logger.info("skipping device %s because it has no status" % vera_device['name'])
