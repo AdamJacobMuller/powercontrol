@@ -81,6 +81,8 @@ if options.reconcile:
                     except Exception as e:
                         logger.exception(e)
                     logger.debug(port)
+            except urllib2.URLError as foo:
+                logger.exception(foo)
             except urllib2.HTTPError as foo:
                 logger.exception(foo)
             except socket.timeout as foo:
@@ -122,8 +124,7 @@ if options.reconcile:
                         logger.exception(e)
                     logger.debug(port)
             except Exception as e:
-                logger.exception(e)
-
+                log.exception("caught exception handling device = %s" % vera_device)
 
 if options.christmas:
     sun_times = astral.Astral()['New York'].sun(datetime.date.today())
