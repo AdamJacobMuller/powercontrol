@@ -109,6 +109,9 @@ if options.reconcile:
 
                     port.tag = clean(port.description)
 
+                    if 'status' not in vera_device:
+                        logger.info("skipping device %s because it has no status" % vera_device['name'])
+
                     if vera_device['status'] == "1":
                         port.state = True
                     elif vera_device['status'] == "0":
