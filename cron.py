@@ -124,7 +124,7 @@ if options.reconcile:
                         logger.exception(e)
                     logger.debug(port)
             except Exception as e:
-                log.exception("caught exception handling device = %s" % vera_device)
+                logger.exception("caught exception handling device = %s" % vera_device)
 
 if options.christmas:
     sun_times = astral.Astral()['New York'].sun(datetime.date.today())
