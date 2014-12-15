@@ -1,8 +1,14 @@
-from django.db import models
-
 import urllib2
 import requests
 import base64
+import logging
+
+from django.db import models
+
+logging.basicConfig(
+    format = '%(asctime)s [%(levelname)s] %(message)s',
+)
+logger = logging.getLogger("model")
 
 
 class Device(models.Model):
@@ -88,6 +94,7 @@ class Port(models.Model):
                                )
 
             response = urllib2.urlopen(request).read()
+            logging.debug("got response from dli: %s" % response)
         elif self.device.type == "vera":
             url = 'http://%s/data_request?id=action&output_format=json&DeviceNum=%d&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue=%d' % (
                 self.device.ip,
