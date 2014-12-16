@@ -40,11 +40,11 @@ def clean(string, id = None, port = None):
         ports = Port.objects.filter(
             tag = tag
         )
-        logger.debug("clean: ports is %s" % ports)
+        #logger.debug("clean: ports is %s" % ports)
         if id is None or ports[0].id != id:
             return '%s-%s' % (tag, port)
-    else:
-        logger.debug("clean: no lookup for %s - %s - %s" % (string, id, port))
+#    else:
+#        logger.debug("clean: no lookup for %s - %s - %s" % (string, id, port))
     return tag
 
 if options.reconcile:
@@ -59,7 +59,7 @@ if options.reconcile:
                                    base64.encodestring("%s:%s" % ( device.username, device.password))
                                    )
                                    )
-                logger.debug("loading %s" % url)
+                logger.info("%s: loading %s" % (device, url))
                 response = urllib2.urlopen(request, timeout = 2).read()
                 rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>', response)
                 for match in rer:
@@ -76,21 +76,30 @@ if options.reconcile:
 
                     port.description = match.group("description")
 
+                    logger.error("%s authority is %s" % (port, port.authority))
+
                     port.tag = clean(port.description)
                     if len(port.tag) == 0:
                         port.tag = None
 
-                    if match.group("state") == "ON":
-                        port.state = True
-                    elif match.group("state") == "OFF":
-                        port.state = False
-                    else:
-                        port.state = None
+                    if match.group("state") == "ON" and port.state is False:
+                        if port.authority == "remote":
+                            logger.error("%s: local port state was off, remote port state is on, authority is remote" % port)
+                            port.state = True
+                        elif port.authority == "local":
+                            logger.error("%s: local port state was off, remote port state is on, authority is local" % port)
+                    elif match.group("state") == "OFF" and port.state is True:
+                        if port.authority == "remote":
+                            logger.error("%s: local port state was on, remote port state is off, authority is remote" % port)
+                            port.state = False
+                        elif port.authority == "local":
+                            logger.error("%s: local port state was on, remote port state is off, authority is local" % port)
+
                     try:
+                        logger.debug("%s: calling save()" % port)
                         port.save()
                     except Exception as e:
                         logger.exception(e)
-                    logger.debug(port)
             except urllib2.URLError as foo:
                 logger.exception(foo)
             except urllib2.HTTPError as foo:
@@ -100,7 +109,7 @@ if options.reconcile:
         elif device.type == "vera":
             try:
                 s_url = "http://%s/data_request?id=sdata&output_format=json" % device.ip
-                logger.debug("loading %s" % s_url)
+                logger.info("%s: loading %s" % (device, s_url))
                 sdata = requests.get(s_url)
                 s_json = sdata.json()
                 for vera_device in s_json['devices']:
@@ -136,7 +145,6 @@ if options.reconcile:
                         port.save()
                     except Exception as e:
                         logger.exception(e)
-                    logger.debug(port)
             except Exception as e:
                 logger.exception("caught exception handling device = %s" % vera_device)
 
@@ -198,18 +206,20 @@ if options.christmas:
         else:
             logger.debug("visibility of %f is >= %f" % ( forecast_j['currently']['visibility'], visibility))
 
-    set = get_object_or_404(Set, tag = 'christmas-lights')
-    for port in set.ports.all():
+    christmas_lights = get_object_or_404(Set, tag = 'christmas-lights')
+    for port in christmas_lights.ports.all():
         if desired_state == "on":
             if port.state is True:
                 logger.debug("%s already on, skipping" % port)
                 continue
             port.state = True
+            logger.info("%s: turning port on" % port)
         elif desired_state == "off":
             if port.state is False:
                 logger.debug("%s already off, skipping" % port)
                 continue
             port.state = False
+            logger.info("%s: turning port off" % port)
         else:
             raise Exception("invalid port state!")
 
