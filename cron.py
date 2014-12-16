@@ -160,7 +160,7 @@ if options.christmas:
     i_delta = (now - sunrise).total_seconds()
 
     logger.debug("now is %s (%s)" % (now, repr(now)))
-    logger.debug("sunrise is %s (%s)" % (sunset, repr(sunrise)))
+    logger.debug("sunrise is %s (%s)" % (sunrise, repr(sunrise)))
     logger.debug("sunset is %s (%s)" % (sunset, repr(sunset)))
     logger.debug("now-rise delta is %s (%s) %s" % (now - sunrise, repr(now - sunrise), i_delta))
 
