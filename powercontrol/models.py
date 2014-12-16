@@ -5,9 +5,6 @@ import logging
 
 from django.db import models
 
-logging.basicConfig(
-    format = '%(asctime)s [%(levelname)s] %(message)s',
-)
 logger = logging.getLogger("model")
 
 
@@ -29,13 +26,13 @@ class Device(models.Model):
 
 class Port(models.Model):
     modes = (
-            ('None' , None),
-            ('On'   , 'on'),
-            ('Off'  , 'off')
+            ('none' , None),
+            ('on'   , 'On'),
+            ('off'  , 'Off')
     )
     authorities = (
-                  ('Local', 'local'),
-                  ('Remote', 'remote'),
+                  ('local', 'Local'),
+                  ('remote', 'Remote'),
 
     )
     device = models.ForeignKey(Device)
@@ -60,6 +57,8 @@ class Port(models.Model):
         return "%s - %s" % (dn, pn)
 
     def save(self, *args, **kwargs):
+        print "%s: entering save()" % self
+        logger.debug("%s: entering save" % self)
         if self.mode == "none":
             self.mode = None
         if self.mode == "None":
@@ -80,6 +79,8 @@ class Port(models.Model):
                 v_state = 0
             else:
                 raise Exception("invalid mode: %s" % self.mode)
+        logger.info("mode = %s, state = %s, v_state = %s, d_state = %s" % (self.mode, self.state, v_state, d_state))
+        print("mode = %s, state = %s, v_state = %s, d_state = %s" % (self.mode, self.state, v_state, d_state))
         if self.device.type == "dli":
             url = "http://%s/outlet?%s=%s" % (
                 self.device.ip,
@@ -87,6 +88,7 @@ class Port(models.Model):
                 d_state.upper()
             )
             request = urllib2.Request(url = url)
+            print "%s: making HTTP request to %s" % (self, url)
             request.add_header("Authorization",
                                "Basic %s" % (
                                base64.encodestring("%s:%s" % ( self.device.username, self.device.password))
