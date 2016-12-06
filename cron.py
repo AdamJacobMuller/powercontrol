@@ -206,7 +206,7 @@ if options.christmas:
         else:
             logger.debug("visibility of %f is >= %f" % (forecast_j['currently']['visibility'], visibility))
 
-    christmas_lights = get_object_or_404(Set, tag='christmas-lights')
+    christmas_lights = get_object_or_404(Set, tag='christmas')
     for port in christmas_lights.ports.all():
         if desired_state == "on":
             if port.state is True:
