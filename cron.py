@@ -11,34 +11,34 @@ import socket
 import logging
 import requests
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "power.settings")
-
 from powercontrol.models import *
 from django.shortcuts import get_object_or_404
 from optparse import OptionParser
 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "power.settings")
+
 logging.basicConfig(
-    format = '%(asctime)s [%(levelname)s] %(message)s',
+    format='%(asctime)s [%(levelname)s] %(message)s',
 )
 logger = logging.getLogger("cron")
 
 parser = OptionParser()
-parser.add_option("-l", "--log-level", dest = "log_level", default = "INFO")
-parser.add_option("-r", "--reconcile", dest = "reconcile", default = False, action = 'store_true')
-parser.add_option("-c", "--christmas", dest = "christmas", default = False, action = 'store_true')
-parser.add_option("-f", "--forecast", dest = "forecast", default = False)
-parser.add_option("-t", "--time", dest = "time", default = False)
+parser.add_option("-l", "--log-level", dest="log_level", default="INFO")
+parser.add_option("-r", "--reconcile", dest="reconcile", default=False, action='store_true')
+parser.add_option("-c", "--christmas", dest="christmas", default=False, action='store_true')
+parser.add_option("-f", "--forecast", dest="forecast", default=False)
+parser.add_option("-t", "--time", dest="time", default=False)
 
 (options, args) = parser.parse_args()
 
 logger.setLevel(getattr(logging, options.log_level))
 
 
-def clean(string, id = None, port = None):
+def clean(string, id=None, port=None):
     tag = re.sub("[^a-zA-Z0-9]+", "-", string).strip("-").lower()
     if port is not None:
         ports = Port.objects.filter(
-            tag = tag
+            tag=tag
         )
         #logger.debug("clean: ports is %s" % ports)
         if id is None or ports[0].id != id:
@@ -48,7 +48,7 @@ def clean(string, id = None, port = None):
     return tag
 
 if options.reconcile:
-    devices = Device.objects.filter(enabled = True).all()
+    devices = Device.objects.filter(enabled=True).all()
     for device in devices:
         if device.type == "dli":
             try:
@@ -56,16 +56,16 @@ if options.reconcile:
                 request = urllib2.Request(url="http://%s/index.htm" % (device.ip))
                 request.add_header("Authorization",
                                    "Basic %s" % (
-                                   base64.encodestring("%s:%s" % ( device.username, device.password))
+                                       base64.encodestring("%s:%s" % (device.username, device.password))
                                    )
                                    )
                 logger.info("%s: loading %s" % (device, url))
-                response = urllib2.urlopen(request, timeout = 2).read()
+                response = urllib2.urlopen(request, timeout=2).read()
                 rer = re.finditer('<tr bgcolor="#F4F4F4"><td align=center>(?P<port>\d+)</td>[\n\t\s]+<td>(?P<description>.*?)</td><td>[\n\t\s]+<b><font color=(?:green|red)>(?P<state>ON|OFF)</font></b></td>', response)
                 for match in rer:
                     ports = Port.objects.filter(
-                        device = device,
-                        port = match.group("port")
+                        device=device,
+                        port=match.group("port")
                     )
                     if len(ports) == 0:
                         port = Port()
@@ -114,8 +114,8 @@ if options.reconcile:
                 s_json = sdata.json()
                 for vera_device in s_json['devices']:
                     ports = Port.objects.filter(
-                        device = device,
-                        port = vera_device['id']
+                        device=device,
+                        port=vera_device['id']
                     )
                     if len(ports) == 0:
                         port = Port()
@@ -152,9 +152,9 @@ if options.christmas:
     sun_times = astral.Astral()['New York'].sun(datetime.date.today())
     est = pytz.timezone("America/New_York")
     if options.time:
-        now = datetime.datetime.fromtimestamp(float(options.time), tz = est)
+        now = datetime.datetime.fromtimestamp(float(options.time), tz=est)
     else:
-        now = datetime.datetime.now(tz = est)
+        now = datetime.datetime.now(tz=est)
     sunset = sun_times['sunset']
     sunrise = sun_times['sunrise']
     i_delta = (now - sunrise).total_seconds()
@@ -188,25 +188,25 @@ if options.christmas:
         except IndexError:
             visibility = 1
 
-        f_url = 'https://api.forecast.io/forecast/%s/%f,%f' % ( api_key, lat, lon)
+        f_url = 'https://api.forecast.io/forecast/%s/%f,%f' % (api_key, lat, lon)
 
         logger.debug("loading forecast from %s" % f_url)
         forecast = requests.get(f_url)
         forecast_j = forecast.json()
 
         if forecast_j['currently']['cloudCover'] > cloudCover:
-            logger.info("cloudCover of %f is > %f" % ( forecast_j['currently']['cloudCover'], cloudCover))
+            logger.info("cloudCover of %f is > %f" % (forecast_j['currently']['cloudCover'], cloudCover))
             desired_state = "on"
         else:
-            logger.debug("cloudCover of %f is <= %f" % ( forecast_j['currently']['cloudCover'], cloudCover))
+            logger.debug("cloudCover of %f is <= %f" % (forecast_j['currently']['cloudCover'], cloudCover))
 
         if forecast_j['currently']['visibility'] < visibility:
-            logger.info("visibility of %f is < %f" % ( forecast_j['currently']['visibility'], visibility))
+            logger.info("visibility of %f is < %f" % (forecast_j['currently']['visibility'], visibility))
             desired_state = "on"
         else:
-            logger.debug("visibility of %f is >= %f" % ( forecast_j['currently']['visibility'], visibility))
+            logger.debug("visibility of %f is >= %f" % (forecast_j['currently']['visibility'], visibility))
 
-    christmas_lights = get_object_or_404(Set, tag = 'christmas-lights')
+    christmas_lights = get_object_or_404(Set, tag='christmas-lights')
     for port in christmas_lights.ports.all():
         if desired_state == "on":
             if port.state is True:
