@@ -108,6 +108,8 @@ class Port(models.Model):
             requests.get(url)
         else:
             raise Exception("INVALID DEVICE TYPE!")
+        if self.state is None:
+            self.state = -1
 
         super(Port, self).save(*args, **kwargs)
         return d_state
