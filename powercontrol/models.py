@@ -63,6 +63,8 @@ class Port(models.Model):
             self.mode = None
         if self.mode == "None":
             self.mode = None
+        d_state = 'unknown'
+        v_state = 'unknown'
         if self.mode is None:
             if self.state is True:
                 d_state = "on"
