@@ -26,9 +26,9 @@ class Device(models.Model):
 
 class Port(models.Model):
     modes = (
-            ('none' , None),
-            ('on'   , 'On'),
-            ('off'  , 'Off')
+            ('none', None),
+            ('on', 'On'),
+            ('off', 'Off')
     )
     authorities = (
                   ('local', 'Local'),
@@ -41,7 +41,7 @@ class Port(models.Model):
     tag = models.CharField(unique=True, max_length=255, null=True)
     state = models.BooleanField()
     mode = models.CharField(max_length=255, choices=modes, null=True, blank=True)
-    authority = models.CharField(max_length = 255, choices = authorities, null = False, default = 'local')
+    authority = models.CharField(max_length=255, choices=authorities, null=False, default='local')
 
     def __unicode__(self):
         if len(self.device.name) > 0:
@@ -89,11 +89,11 @@ class Port(models.Model):
                 self.port,
                 d_state.upper()
             )
-            request = urllib2.Request(url = url)
+            request = urllib2.Request(url=url)
             print "%s: making HTTP request to %s" % (self, url)
             request.add_header("Authorization",
                                "Basic %s" % (
-                               base64.encodestring("%s:%s" % ( self.device.username, self.device.password))
+                                   base64.encodestring("%s:%s" % (self.device.username, self.device.password))
                                )
                                )
 
@@ -109,7 +109,7 @@ class Port(models.Model):
         else:
             raise Exception("INVALID DEVICE TYPE!")
         if self.state is None:
-            self.state = -1
+            self.state = True
 
         super(Port, self).save(*args, **kwargs)
         return d_state
