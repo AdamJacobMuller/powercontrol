@@ -11,11 +11,11 @@ import socket
 import logging
 import requests
 
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "power.settings")
+
 from powercontrol.models import *
 from django.shortcuts import get_object_or_404
 from optparse import OptionParser
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "power.settings")
 
 logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s',
