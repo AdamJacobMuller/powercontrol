@@ -89,7 +89,7 @@ class Port(models.Model):
                 self.port,
                 d_state.upper()
             )
-            request = urllib2.Request(url=url)
+            request = urllib2.Request(url=url, timeout=3)
             print "%s: making HTTP request to %s" % (self, url)
             request.add_header("Authorization",
                                "Basic %s" % (
@@ -105,7 +105,7 @@ class Port(models.Model):
                 self.port,
                 v_state
             )
-            requests.get(url)
+            requests.get(url, timeout=3)
         else:
             raise Exception("INVALID DEVICE TYPE!")
         if self.state is None:
