@@ -89,7 +89,7 @@ class Port(models.Model):
                 self.port,
                 d_state.upper()
             )
-            request = urllib2.Request(url=url, timeout=3)
+            request = urllib2.Request(url=url)
             print "%s: making HTTP request to %s" % (self, url)
             request.add_header("Authorization",
                                "Basic %s" % (
@@ -97,7 +97,7 @@ class Port(models.Model):
                                )
                                )
 
-            response = urllib2.urlopen(request).read()
+            response = urllib2.urlopen(request, None, 3).read()
             logging.debug("got response from dli: %s" % response)
         elif self.device.type == "vera":
             url = 'http://%s/data_request?id=action&output_format=json&DeviceNum=%d&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue=%d' % (
