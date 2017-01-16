@@ -208,6 +208,8 @@ if options.christmas:
 
     christmas_lights = get_object_or_404(Set, tag='christmas')
     for port in christmas_lights.ports.all():
+        if port.device.enabled is False:
+            continue
         if desired_state == "on":
             if port.state is True:
                 logger.debug("%s already on, skipping" % port)
