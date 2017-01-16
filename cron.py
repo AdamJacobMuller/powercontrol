@@ -222,5 +222,7 @@ if options.christmas:
             logger.info("%s: turning port off" % port)
         else:
             raise Exception("invalid port state!")
-
-        port.save()
+        try:
+            port.save()
+        except Exception as e:
+            logger.exception(e)
